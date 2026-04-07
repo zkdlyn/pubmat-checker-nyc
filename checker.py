@@ -175,7 +175,11 @@ def check_readability(image, threshold=0.65):
     Uses docTR for OCR confidence + existing CV metrics for blur/contrast/size.
     """
     if not DOCTR_AVAILABLE:
-        return {"readability_score": 0.5, "status": "WARN", "reason": "OCR module not available - using fallback"}
+        return {
+            "Readability Status": "Unable to assess",
+            "Remarks": "OCR module not available on this deployment",
+            "Score": 0.0
+        }
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     remarks = []
 
