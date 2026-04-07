@@ -41,8 +41,9 @@ elif selected == "Publication Material Checker":
     @st.cache_resource
     def load_model():
         return YOLO("best.pt")
-
-    model = load_model()
+    if st.button("Load Model"):
+        model = load_model()
+        st.success("Model loaded successfully!")
 
     st.markdown("## Publication Material Compliance Checker")
 
