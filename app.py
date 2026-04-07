@@ -1,10 +1,19 @@
+import os
+import sys
+import warnings
+
+# Set YOLO config directory to writable location BEFORE importing YOLO
+os.environ['YOLO_CONFIG_DIR'] = '/tmp/Ultralytics'
+os.environ['YOLO_VERBOSE'] = 'false'
+
+# Suppress warnings for cleaner output
+warnings.filterwarnings('ignore')
+
 import streamlit as st
 import cv2
 import numpy as np
 import pandas as pd
 from ultralytics import YOLO
-import os
-import sys
 
 from streamlit_option_menu import option_menu
 
@@ -37,13 +46,16 @@ if selected == "Caption Verifier":
     # Code for Caption Verifier
     pass
 elif selected == "Publication Material Checker":
-    # Load model
+    # Load model with error handling
     @st.cache_resource
     def load_model():
-        return YOLO("best.pt")
-    if st.button("Load Model"):
-        model = load_model()
-        st.success("Model loaded successfully!")
+        try:
+            return YOLO("best.pt")
+        except Exception as e:
+            st.error(f"Failed to load model: {e}")
+            return None
+    
+    model = load_model()
 
     st.markdown("## Publication Material Compliance Checker")
 
