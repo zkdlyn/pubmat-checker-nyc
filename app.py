@@ -142,12 +142,8 @@ elif selected == "Publication Material Checker":
         for item in processed:
             audit = item["audit"]
             with st.expander(f"Results for {item['name']}", expanded=True):
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.image(cv2.cvtColor(item["img"], cv2.COLOR_BGR2RGB), caption="Original")
-                with col2:
-                    st.image(cv2.cvtColor(item["annotated_img"], cv2.COLOR_BGR2RGB), caption="Annotated")
+                
+                st.image(cv2.cvtColor(item["annotated_img"], cv2.COLOR_BGR2RGB), caption="Annotated")
 
                 # Logo Analysis
                 st.markdown("### Logo Analysis")
