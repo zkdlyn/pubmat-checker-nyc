@@ -102,6 +102,8 @@ def check_watermark(image):
     and fuzzy-matches against known watermark handles.
     Returns detection results and the bounding boxes found.
     """
+    if not DOCTR_AVAILABLE:
+        return {"found": False, "reason": "OCR module not available on this deployment"}
     h, w = image.shape[:2]
     crop_y = int(h * 0.85)
     crop = image[crop_y:h, 0:w]
@@ -172,6 +174,8 @@ def check_readability(image, threshold=0.65):
     """
     Uses docTR for OCR confidence + existing CV metrics for blur/contrast/size.
     """
+    if not DOCTR_AVAILABLE:
+        return {"readability_score": 0.5, "status": "WARN", "reason": "OCR module not available - using fallback"}
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     remarks = []
 
@@ -343,6 +347,8 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
     """
     Applies post-type-specific checks beyond logos and watermark.
     """
+    if not DOCTR_AVAILABLE:
+        return {"post_type": post_type, "status": "OCR unavailable", "checks_performed": []}
     rules = POST_TYPE_RULES.get(post_type.lower())
     if rules is None:
         return {
