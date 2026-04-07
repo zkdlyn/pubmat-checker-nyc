@@ -1,17 +1,27 @@
 import cv2
 import numpy as np
 import difflib
-from doctr.models import ocr_predictor
-from doctr.io import DocumentFile
 from PIL import Image
 import tempfile
 import os
 
 # LOAD DOCTR MODEL ONCE
 _doctr_model = None
+DOCTR_AVAILABLE = False
+
+try:
+    from doctr.models import ocr_predictor
+    from doctr.io import DocumentFile
+    DOCTR_AVAILABLE = True
+except ImportError:
+    print("Warning: doctr not available. OCR features will be limited.")
+    ocr_predictor = None
+    DocumentFile = None
 
 def get_doctr_model():
     global _doctr_model
+    if not DOCTR_AVAILABLE:
+        raise ImportError("doctr module not available on this deployment")
     if _doctr_model is None:
         _doctr_model = ocr_predictor(pretrained=True)
     return _doctr_model
