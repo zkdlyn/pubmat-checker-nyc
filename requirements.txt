@@ -7,4 +7,4 @@ torchvision>=0.15.0
 ultralytics>=8.0.0
 streamlit-option-menu>=0.3.2
 pillow>=10.0.0
-easyocr>=1.7.0
+doctr[torch]>=0.6.0

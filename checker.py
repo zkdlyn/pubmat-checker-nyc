@@ -1,27 +1,17 @@
 import cv2
 import numpy as np
 import difflib
+from doctr.models import ocr_predictor
+from doctr.io import DocumentFile
 from PIL import Image
 import tempfile
 import os
 
 # LOAD DOCTR MODEL ONCE
 _doctr_model = None
-DOCTR_AVAILABLE = False
-
-try:
-    from doctr.models import ocr_predictor
-    from doctr.io import DocumentFile
-    DOCTR_AVAILABLE = True
-except ImportError:
-    print("Warning: doctr not available. OCR features will be limited.")
-    ocr_predictor = None
-    DocumentFile = None
 
 def get_doctr_model():
     global _doctr_model
-    if not DOCTR_AVAILABLE:
-        raise ImportError("doctr module not available on this deployment")
     if _doctr_model is None:
         _doctr_model = ocr_predictor(pretrained=True)
     return _doctr_model
@@ -102,14 +92,6 @@ def check_watermark(image):
     and fuzzy-matches against known watermark handles.
     Returns detection results and the bounding boxes found.
     """
-    if not DOCTR_AVAILABLE:
-        return {
-            "watermark_present": False,
-            "handles": {},
-            "missing": ["OCR not available"],
-            "remark": "Cannot check watermark - OCR module not available",
-            "boxes": []
-        }
     h, w = image.shape[:2]
     crop_y = int(h * 0.85)
     crop = image[crop_y:h, 0:w]
@@ -180,12 +162,6 @@ def check_readability(image, threshold=0.65):
     """
     Uses docTR for OCR confidence + existing CV metrics for blur/contrast/size.
     """
-    if not DOCTR_AVAILABLE:
-        return {
-            "Readability Status": "Unable to assess",
-            "Remarks": "OCR module not available on this deployment",
-            "Score": 0.0
-        }
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     remarks = []
 
@@ -357,12 +333,6 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
     """
     Applies post-type-specific checks beyond logos and watermark.
     """
-    if not DOCTR_AVAILABLE:
-        return {
-            "post_type": post_type,
-            "status": "Skipped",
-            "checks": {"ocr_available": {"pass": False, "remark": "OCR module not available on this deployment"}}
-        }
     rules = POST_TYPE_RULES.get(post_type.lower())
     if rules is None:
         return {
