@@ -103,7 +103,13 @@ def check_watermark(image):
     Returns detection results and the bounding boxes found.
     """
     if not DOCTR_AVAILABLE:
-        return {"found": False, "reason": "OCR module not available on this deployment"}
+        return {
+            "watermark_present": False,
+            "handles": {},
+            "missing": ["OCR not available"],
+            "remark": "Cannot check watermark - OCR module not available",
+            "boxes": []
+        }
     h, w = image.shape[:2]
     crop_y = int(h * 0.85)
     crop = image[crop_y:h, 0:w]
@@ -352,7 +358,11 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
     Applies post-type-specific checks beyond logos and watermark.
     """
     if not DOCTR_AVAILABLE:
-        return {"post_type": post_type, "status": "OCR unavailable", "checks_performed": []}
+        return {
+            "post_type": post_type,
+            "status": "Skipped",
+            "checks": {"ocr_available": {"pass": False, "remark": "OCR module not available on this deployment"}}
+        }
     rules = POST_TYPE_RULES.get(post_type.lower())
     if rules is None:
         return {
