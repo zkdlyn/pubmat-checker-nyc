@@ -7,7 +7,7 @@ from PIL import Image
 import tempfile
 import os
 
-# LOAD DOCTR MODEL ONCE
+# LOAD DOCTR MODEL ONCE — caller must wrap with @st.cache_resource in Streamlit context
 _doctr_model = None
 
 def get_doctr_model():
@@ -15,6 +15,26 @@ def get_doctr_model():
     if _doctr_model is None:
         _doctr_model = ocr_predictor(pretrained=True)
     return _doctr_model
+
+
+# ── Shared helper: run docTR OCR on a numpy BGR image ────────────────────────
+def _run_doctr(image_bgr):
+    """
+    Converts a BGR numpy array to a temp JPEG, runs docTR, returns the result.
+    Cleans up the temp file in all cases.
+    """
+    image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+    image_pil = Image.fromarray(image_rgb)
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        tmp_path = tmp.name
+        image_pil.save(tmp_path)
+    try:
+        doc = DocumentFile.from_images([tmp_path])
+        result = get_doctr_model()(doc)
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+    return result
 
 
 # rule config per post type
@@ -35,8 +55,8 @@ POST_TYPE_RULES = {
         "requires_template": True,
         "readability_threshold": 0.70,
         "strict_logo_order": True,
-        "requires_full_page": True,       
-        "requires_sgd": True,        
+        "requires_full_page": True,
+        "requires_sgd": True,
     },
     "resolution": {
         "requires_template": True,
@@ -54,16 +74,16 @@ POST_TYPE_RULES = {
     "photo": {
         "requires_watermark": False,
         "requires_template": True,
-        "readability_threshold": 0.50,    
+        "readability_threshold": 0.50,
         "strict_logo_order": True,
         "requires_high_resolution": True,
-        "min_resolution": (1080, 1080),   
+        "min_resolution": (1080, 1080),
         "check_centering": True,
         "check_lighting": True,
     },
     "holiday": {
         "requires_watermark": True,
-        "requires_template": False,       
+        "requires_template": False,
         "readability_threshold": 0.50,
         "strict_logo_order": False,
     },
@@ -85,56 +105,41 @@ WATERMARK_HANDLES = [
 WATERMARK_FUZZY_THRESHOLD = 0.75
 
 
-# watermark check using OCR
+# ── Watermark check using OCR ─────────────────────────────────────────────────
 def check_watermark(image):
     """
     Crops the bottom 15% of the image, runs docTR OCR on it,
     and fuzzy-matches against known watermark handles.
     Returns detection results and the bounding boxes found.
     """
-    h, w = image.shape[:2]
-    crop_y = int(h * 0.85)
-    crop = image[crop_y:h, 0:w]
+    img_h, img_w = image.shape[:2]
+    crop_y = int(img_h * 0.85)
+    crop = image[crop_y:img_h, 0:img_w]
 
-    # Convert numpy array to PIL Image and save to temp file for docTR
-    crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
-    crop_pil = Image.fromarray(crop_rgb)
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp_path = tmp.name
-        crop_pil.save(tmp_path)
-    
-    try:
-        doc = DocumentFile.from_images([tmp_path])
-        result = get_doctr_model()(doc)
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+    result = _run_doctr(crop)
 
-    found_handles = {h: False for h in WATERMARK_HANDLES}
+    found_handles = {handle: False for handle in WATERMARK_HANDLES}
     raw_words = []
-    boxes_abs = []  
+    boxes_abs = []
 
     for page in result.pages:
         for block in page.blocks:
             for line in block.lines:
-                line_text = " ".join(w.value for w in line.words).lower().strip()
                 for word in line.words:
                     raw_words.append(word.value.lower())
-                    # docTR boxes are relative (0-1); convert to absolute crop coords
+                    # docTR boxes are relative (0-1); convert to absolute image coords
                     (x0, y0), (x1, y1) = word.geometry
-                    abs_x0 = int(x0 * w)
+                    abs_x0 = int(x0 * img_w)
                     abs_y0 = crop_y + int(y0 * crop.shape[0])
-                    abs_x1 = int(x1 * w)
+                    abs_x1 = int(x1 * img_w)
                     abs_y1 = crop_y + int(y1 * crop.shape[0])
                     boxes_abs.append((abs_x0, abs_y0, abs_x1, abs_y1))
 
-    # Fuzzy match each handle against all detected words and line combinations
     full_text = " ".join(raw_words)
     match_results = {}
     for handle in WATERMARK_HANDLES:
         handle_clean = handle.lower().replace("@", "")
         ratio = difflib.SequenceMatcher(None, handle_clean, full_text).ratio()
-        # Also check individual word matches
         best_word_ratio = max(
             (difflib.SequenceMatcher(None, handle_clean, w).ratio() for w in raw_words),
             default=0.0
@@ -157,31 +162,18 @@ def check_watermark(image):
     }
 
 
-# ── Readability check (docTR) ────────────────────────────────────────────────
+# ── Readability check (docTR) ─────────────────────────────────────────────────
 def check_readability(image, threshold=0.65):
     """
-    Uses docTR for OCR confidence + existing CV metrics for blur/contrast/size.
+    Uses docTR for OCR confidence + CV metrics for blur/contrast/size.
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     remarks = []
 
-    # --- docTR OCR confidence ---
-    # Convert numpy array to PIL Image and save to temp file for docTR
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    image_pil = Image.fromarray(image_rgb)
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        tmp_path = tmp.name
-        image_pil.save(tmp_path)
-    
-    try:
-        doc = DocumentFile.from_images([tmp_path])
-        result = get_doctr_model()(doc)
-    finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+    result = _run_doctr(image)
 
     confidences = []
-    word_heights_rel = []  # relative heights from docTR geometry
+    word_heights_rel = []
 
     for page in result.pages:
         for block in page.blocks:
@@ -207,43 +199,25 @@ def check_readability(image, threshold=0.65):
     img_h = image.shape[0]
     if word_heights_rel:
         avg_height_px = (sum(word_heights_rel) / len(word_heights_rel)) * img_h
+        if avg_height_px < 12:
+            size_score = 0.4
+            remarks.append("Text too small")
+        elif avg_height_px < 20:
+            size_score = 0.7
+        else:
+            size_score = 1.0
     else:
         avg_height_px = 0
         size_score = 0.0
         remarks.append("No word geometry data")
-        # Skip to final calculation if no height data
-        final_score = (
-            0.4 * ocr_score +
-            0.2 * 0.0 +
-            0.2 * (np.std(gray) / 60) +
-            0.2 * max(0, min(cv2.Laplacian(gray, cv2.CV_64F).var() / 100, 1.0))
-        )
-        if final_score < 0.5:
-            label = "Low readability"
-        elif final_score < threshold:
-            label = "Moderate readability"
-        else:
-            label = "Readable"
-        return {
-            "Readability Status": label,
-            "Remarks": ", ".join(remarks) if remarks else "Good readability",
-            "Score": round(final_score, 3)
-        }
-    if avg_height_px < 12:
-        size_score = 0.4
-        remarks.append("Text too small")
-    elif avg_height_px < 20:
-        size_score = 0.7
-    else:
-        size_score = 1.0
 
-    # Contrast Check
+    # Contrast check
     global_contrast = np.std(gray)
     contrast_score = min(global_contrast / 60, 1.0)
     if contrast_score < 0.5:
         remarks.append("Low contrast")
 
-    # Blur
+    # Blur check
     laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
     if laplacian_var < 50:
         blur_score = 0.3
@@ -275,7 +249,7 @@ def check_readability(image, threshold=0.65):
     }
 
 
-# ── Logo order check ─────────────────────────────────────────────────────────
+# ── Logo order check ──────────────────────────────────────────────────────────
 def check_logo_order(detected: dict):
     """
     Validates the spatial left-to-right order of detected logos.
@@ -292,6 +266,8 @@ def check_logo_order(detected: dict):
     if "nyc" not in present or "bp" not in present:
         return {
             "order_valid": False,
+            # FIX: always include detected_order key to avoid KeyError in app.py
+            "detected_order": "N/A — NYC or BP not detected",
             "remark": "Cannot check order — NYC or BP not detected",
             "details": {}
         }
@@ -311,7 +287,6 @@ def check_logo_order(detected: dict):
     if order[-1] != "bp":
         issues.append(f"BP should be last but found '{order[-1]}' rightmost")
 
-    # Collaborators must be strictly between NYC and BP
     collab_logos = {"sk", "yorp"}
     for name in collab_logos:
         if name in positions:
@@ -329,9 +304,13 @@ def check_logo_order(detected: dict):
 
 
 # ── Per-type post rules check ─────────────────────────────────────────────────
-def check_post_type_rules(post_type: str, image, readability_result: dict, detected: dict = None):
+def check_post_type_rules(post_type: str, image, readability_result: dict,
+                          detected: dict = None, wm_result: dict = None,
+                          order_result: dict = None):
     """
     Applies post-type-specific checks beyond logos and watermark.
+
+    Accepts pre-computed wm_result and order_result to avoid redundant OCR/detection calls.
     """
     rules = POST_TYPE_RULES.get(post_type.lower())
     if rules is None:
@@ -355,20 +334,20 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
         "remark": "OK" if score >= threshold else f"Score {score} below threshold {threshold}"
     }
 
-    # --- Logo order check (only if required) ---
+    # --- Logo order check (reuse pre-computed result, avoid double call) ---
     if rules.get("strict_logo_order") and detected:
-        order_result = check_logo_order(detected)
+        result = order_result if order_result is not None else check_logo_order(detected)
         checks["logo_order"] = {
-            "pass": order_result["order_valid"],
-            "remark": order_result["remark"]
+            "pass": result["order_valid"],
+            "remark": result["remark"]
         }
 
-    # --- Watermark check (only if required) ---
+    # --- Watermark check (reuse pre-computed result, avoid double OCR) ---
     if rules.get("requires_watermark"):
-        wm_result = check_watermark(image)
+        result = wm_result if wm_result is not None else check_watermark(image)
         checks["watermark"] = {
-            "pass": wm_result["watermark_present"],
-            "remark": wm_result["remark"]
+            "pass": result["watermark_present"],
+            "remark": result["remark"]
         }
 
     # --- Photo: resolution check ---
@@ -382,14 +361,14 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
             "remark": "OK" if res_pass else f"Image is {w}x{h}, minimum is {min_w}x{min_h}"
         }
 
-    # --- Photo: subject centering (using saliency / center-of-mass of edges) ---
+    # --- Photo: subject centering ---
     if rules.get("check_centering"):
         edges = cv2.Canny(gray, 50, 150)
         moments = cv2.moments(edges)
         if moments["m00"] > 0:
             cx = moments["m10"] / moments["m00"]
             cy = moments["m01"] / moments["m00"]
-            offset_x = abs(cx - w / 2) / (w / 2)  # 0 = centered, 1 = at edge
+            offset_x = abs(cx - w / 2) / (w / 2)
             offset_y = abs(cy - h / 2) / (h / 2)
             centered = offset_x < 0.25 and offset_y < 0.25
         else:
@@ -405,7 +384,6 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
     # --- Photo: lighting (brightness check) ---
     if rules.get("check_lighting"):
         mean_brightness = float(np.mean(gray))
-        # Flag very dark images — likely no flash used in dark venue
         too_dark = mean_brightness < 60
         checks["lighting"] = {
             "pass": not too_dark,
@@ -414,41 +392,25 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
         }
 
     # --- Advisory / Resolution: full-page check ---
-    # Heuristic: a full-page doc should have significant text coverage across height
     if rules.get("requires_full_page"):
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-        # Rough proxy: high sharpness + good text confidence suggests a clear full-page scan
         is_full_page = laplacian_var > 80 and readability_result.get("Score", 0) >= 0.65
         checks["full_page"] = {
             "pass": is_full_page,
             "remark": "Full page appears present" if is_full_page else "Ensure full advisory/resolution page is shown"
         }
 
-    # --- Advisory / Resolution: SGD text check (check if "SGD" is present in document) ---
+    # --- Advisory / Resolution: SGD text check ---
     if rules.get("requires_sgd"):
-        # Extract text using docTR and check if "SGD" is present
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image_pil = Image.fromarray(image_rgb)
-        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-            tmp_path = tmp.name
-            image_pil.save(tmp_path)
-        
-        try:
-            doc = DocumentFile.from_images([tmp_path])
-            result = get_doctr_model()(doc)
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        
-        # Extract all text from document
+        # Reuse the docTR result from readability if possible — run fresh only here
+        doctr_result = _run_doctr(image)
         extracted_text = ""
-        for page in result.pages:
+        for page in doctr_result.pages:
             for block in page.blocks:
                 for line in block.lines:
                     for word in line.words:
                         extracted_text += word.value + " "
-        
-        # Check if "SGD" text is present
+
         sgd_found = "sgd" in extracted_text.lower()
         checks["SGD"] = {
             "pass": sgd_found,
@@ -463,7 +425,7 @@ def check_post_type_rules(post_type: str, image, readability_result: dict, detec
     }
 
 
-# ── Updated logo_report (now also returns raw detected dict) ─────────────────
+# ── Logo detection + annotation ───────────────────────────────────────────────
 def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
     """
     collaborators: list of logo names that are expected (e.g. ["sk"], ["yorp"], ["sk","yorp"])
@@ -471,8 +433,7 @@ def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
     """
     if collaborators is None:
         collaborators = []
-    
-    # Ensure collaborators are lowercase
+
     collaborators = [c.lower() if isinstance(c, str) else c for c in collaborators]
 
     detected = {"nyc": None, "bp": None, "sk": None, "yorp": None}
@@ -505,26 +466,30 @@ def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
 
         if entry is None:
             remark = "Add Logo" if is_required else "Optional — not detected"
+            # FIX: use explicit boolean field "compliant" instead of relying on remark strings
             report.append({
                 "Logo": logo.upper(),
                 "Detected": "No",
                 "Confidence": "-",
                 "Status": "Missing",
-                "Remark": remark
+                "Remark": remark,
+                "_compliant": not is_required,  # optional logos don't count as failures
             })
         else:
             status = entry["status"]
             conf = round(entry["conf"], 3)
-            remark = "Logo is correct" if status == "correct" else "Revise logo"
+            is_correct = status == "correct"
+            remark = "Logo is correct" if is_correct else "Revise logo"
             report.append({
                 "Logo": logo.upper(),
                 "Detected": "Yes",
                 "Confidence": conf,
                 "Status": status.capitalize(),
-                "Remark": remark
+                "Remark": remark,
+                "_compliant": is_correct,
             })
             xyxy = entry["box"].xyxy[0].cpu().numpy().astype(int)
-            color = (0, 255, 0) if status == "correct" else (0, 0, 255)
+            color = (0, 255, 0) if is_correct else (0, 0, 255)
             cv2.rectangle(img, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
             cv2.putText(img, f"{logo.upper()}",
                         (xyxy[0], xyxy[1] - 10),
@@ -533,17 +498,21 @@ def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
     return report, detected, img
 
 
-# ── Master report generator 
+# ── Master report generator ───────────────────────────────────────────────────
 def generate_report(yolo_results, model, image, post_type,
                     collaborators=None, conf_threshold=0.25):
     """
     Runs all checks and returns a unified audit report + annotated image.
 
     Returns:
-        audit (dict)  — full structured report
+        audit (dict)    — full structured report
         img   (ndarray) — annotated image with logo + watermark boxes
     """
     img = image.copy()
+
+    # Guard against undecodable images
+    if img is None or img.size == 0:
+        raise ValueError("Image could not be decoded or is empty.")
 
     # 1. Logo detection + bounding box annotation
     logo_rep, detected, img = logo_report(
@@ -552,55 +521,58 @@ def generate_report(yolo_results, model, image, post_type,
         collaborators=collaborators or []
     )
 
-    # 2. Logo order
+    # 2. Logo order (computed once, reused below)
     order_result = check_logo_order(detected)
 
     # 3. Watermark (only if required by post type)
     rules = POST_TYPE_RULES.get(post_type.lower(), {})
     requires_watermark = rules.get("requires_watermark", False)
-    
+
     if requires_watermark:
         wm_result = check_watermark(img)
-        # Draw watermark boxes in cyan
         for (x0, y0, x1, y1) in wm_result["boxes"]:
             cv2.rectangle(img, (x0, y0), (x1, y1), (255, 200, 0), 1)
+        h_img = image.shape[0]
         if wm_result["watermark_present"]:
-            h = image.shape[0]
             cv2.putText(img, "Watermark OK",
-                        (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
         else:
-            h = image.shape[0]
             cv2.putText(img, f"Watermark MISSING: {', '.join(wm_result['missing'])}",
-                        (10, h - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2)
+                        (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 0, 0), 2)
     else:
         wm_result = None
 
     # 4. Readability (docTR)
     readability = check_readability(image)
 
-    # 5. Post-type-specific rules
-    type_rules = check_post_type_rules(post_type, image, readability, detected)
-
-    # 6. Overall pass/fail
-    logo_issues = any(
-        r["Remark"] in ("Add Logo", "Revise logo") for r in logo_rep
+    # 5. Post-type-specific rules — pass pre-computed results to avoid redundant calls
+    type_rules = check_post_type_rules(
+        post_type, image, readability,
+        detected=detected,
+        wm_result=wm_result,
+        order_result=order_result
     )
-    
+
+    # 6. Overall pass/fail — use the explicit _compliant boolean field
+    logo_issues = any(not r["_compliant"] for r in logo_rep)
+
     overall_pass = (
         not logo_issues
         and type_rules["status"] == "Pass"
     )
 
+    # Strip internal field before returning to UI
+    logos_display = [{k: v for k, v in r.items() if not k.startswith("_")} for r in logo_rep]
+
     audit = {
         "post_type": post_type,
         "overall": "PASS" if overall_pass else "FAIL",
-        "logos": logo_rep,
+        "logos": logos_display,
         "logo_order": order_result,
         "readability": readability,
         "type_checks": type_rules,
     }
-    
-    # Only include watermark if it was checked
+
     if wm_result is not None:
         audit["watermark"] = wm_result
 
