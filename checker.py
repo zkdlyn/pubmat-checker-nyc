@@ -7,7 +7,7 @@ from PIL import Image
 import tempfile
 import os
 
-# LOAD DOCTR MODEL ONCE — caller must wrap with @st.cache_resource in Streamlit context
+# LOAD DOCTR MODEL ONCE
 _doctr_model = None
 
 def get_doctr_model():
@@ -72,7 +72,6 @@ POST_TYPE_RULES = {
         "strict_logo_order": True,
     },
     "photo": {
-        "requires_watermark": False,
         "requires_template": True,
         "readability_threshold": 0.50,
         "strict_logo_order": True,
@@ -160,7 +159,6 @@ def check_watermark(image):
         "remark": "Watermark OK" if all_present else f"Missing: {', '.join(missing)}",
         "boxes": boxes_abs,
     }
-
 
 # ── Readability check (docTR) ─────────────────────────────────────────────────
 def check_readability(image, threshold=0.65):
