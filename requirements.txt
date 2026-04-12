@@ -7,4 +7,4 @@ torchvision==0.16.2
 ultralytics==8.1.0
 streamlit-option-menu==0.3.6
 pillow==10.3.0
-python-doctr==0.8.1
+python-doctr[torch]==0.8.1
