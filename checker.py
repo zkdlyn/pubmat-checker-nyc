@@ -43,25 +43,24 @@ POST_TYPE_RULES = {
         "requires_watermark": True,
         "requires_template": True,
         "readability_threshold": 0.65,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
     },
     "quotes": {
-        "requires_watermark": True,
         "requires_template": True,
         "readability_threshold": 0.60,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
     },
     "advisory": {
         "requires_template": True,
         "readability_threshold": 0.70,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
         "requires_full_page": True,
         "requires_sgd": True,
     },
     "resolution": {
         "requires_template": True,
         "readability_threshold": 0.70,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
         "requires_full_page": True,
         "requires_sgd": True,
     },
@@ -69,12 +68,12 @@ POST_TYPE_RULES = {
         "requires_watermark": True,
         "requires_template": True,
         "readability_threshold": 0.65,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
     },
     "photo": {
         "requires_template": True,
         "readability_threshold": 0.50,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
         "requires_high_resolution": True,
         "min_resolution": (1080, 1080),
         "check_centering": True,
@@ -84,13 +83,13 @@ POST_TYPE_RULES = {
         "requires_watermark": True,
         "requires_template": False,
         "readability_threshold": 0.50,
-        "strict_logo_order": False,
+        # "strict_logo_order": False,
     },
     "other": {
         "requires_watermark": True,
         "requires_template": False,
         "readability_threshold": 0.50,
-        "strict_logo_order": True,
+        # "strict_logo_order": True,
     }
 }
 
@@ -283,7 +282,7 @@ def check_logo_order(detected: dict):
     if order[0] != "nyc":
         issues.append(f"NYC should be first but found '{order[0]}' leftmost")
     if order[-1] != "bp":
-        issues.append(f"BP should be last but found '{order[-1]}' rightmost")
+        issues.append(f"Bagong Pilipinas should be last but found '{order[-1]}' rightmost")
 
     collab_logos = {"sk", "yorp"}
     for name in collab_logos:
@@ -291,7 +290,7 @@ def check_logo_order(detected: dict):
             if positions[name] <= positions["nyc"]:
                 issues.append(f"{name.upper()} is to the left of or overlapping NYC")
             if positions[name] >= positions["bp"]:
-                issues.append(f"{name.upper()} is to the right of or overlapping BP")
+                issues.append(f"{name.upper()} is to the right of or overlapping Bagong Pilipinas")
 
     return {
         "order_valid": len(issues) == 0,

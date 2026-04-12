@@ -71,7 +71,7 @@ if selected == "Home":
 elif selected == "Caption Verifier":
     st.markdown("## Caption Verifier")
     st.markdown("Paste your caption below to check it against posting guidelines.")
-    
+
     caption = st.text_area("Caption", height=180, placeholder="Paste your caption here...")
 
 # ── Publication Material Checker ──────────────────────────────────────────────
@@ -138,9 +138,13 @@ elif selected == "Publication Material Checker":
     if uploaded_files:
         st.success(f"{len(uploaded_files)} file(s) uploaded!")
 
-    st.button("Clear", on_click=clear)
+    col_submit, col_clear = st.columns(2)
+    with col_submit:
+        submit = st.button("Submit", type="primary")
+    with col_clear:
+        st.button("Clear", on_click=clear)
 
-    if uploaded_files:
+    if uploaded_files and submit:
         if model is None:
             st.error("YOLO model is not loaded. Cannot process images.")
         else:
@@ -233,15 +237,6 @@ elif selected == "Publication Material Checker":
                         else:
                             st.warning(f"⚠️ {order['detected_order']}")
                         st.caption(order["remark"])
-
-                        # Watermark
-                        if "watermark" in audit:
-                            st.markdown("### Watermark Check")
-                            watermark = audit["watermark"]
-                            if watermark["watermark_present"]:
-                                st.success(watermark["remark"])
-                            else:
-                                st.error(watermark["remark"])
 
                         # Readability
                         st.markdown("### Readability Analysis")
