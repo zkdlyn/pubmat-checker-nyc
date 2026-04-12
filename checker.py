@@ -306,8 +306,6 @@ def check_post_type_rules(post_type: str, image, readability_result: dict,
                           order_result: dict = None):
     """
     Applies post-type-specific checks beyond logos and watermark.
-
-    Accepts pre-computed wm_result and order_result to avoid redundant OCR/detection calls.
     """
     rules = POST_TYPE_RULES.get(post_type.lower())
     if rules is None:
