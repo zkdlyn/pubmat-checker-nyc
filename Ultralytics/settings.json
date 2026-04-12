@@ -1,0 +1,21 @@
+{
+  "settings_version": "0.0.6",
+  "datasets_dir": "C:\\Users\\darly\\Documents\\CAPSTONE TESTING\\pubmat-checker-nyc\\datasets",
+  "weights_dir": "weights",
+  "runs_dir": "runs",
+  "uuid": "a9cc6e8ac4d73ae55e772c6ef2129c1df281da47348bc28a50f37f6a1f579314",
+  "sync": true,
+  "api_key": "",
+  "openai_api_key": "",
+  "clearml": true,
+  "comet": true,
+  "dvc": true,
+  "hub": true,
+  "mlflow": true,
+  "neptune": true,
+  "raytune": true,
+  "tensorboard": false,
+  "wandb": false,
+  "vscode_msg": true,
+  "openvino_msg": true
+}

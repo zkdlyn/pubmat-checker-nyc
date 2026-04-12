@@ -71,51 +71,8 @@ if selected == "Home":
 elif selected == "Caption Verifier":
     st.markdown("## Caption Verifier")
     st.markdown("Paste your caption below to check it against posting guidelines.")
-
-    platform = st.selectbox("Platform", ["Facebook", "Instagram", "Twitter/X", "LinkedIn"])
-
-    PLATFORM_LIMITS = {
-        "Facebook": 63206,
-        "Instagram": 2200,
-        "Twitter/X": 280,
-        "LinkedIn": 3000,
-    }
-    MAX_HASHTAGS = {"Facebook": 10, "Instagram": 30, "Twitter/X": 5, "LinkedIn": 5}
-
+    
     caption = st.text_area("Caption", height=180, placeholder="Paste your caption here...")
-
-    if caption:
-        char_limit = PLATFORM_LIMITS[platform]
-        hashtag_limit = MAX_HASHTAGS[platform]
-
-        char_count = len(caption)
-        hashtags = [w for w in caption.split() if w.startswith("#")]
-        hashtag_count = len(hashtags)
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Characters", f"{char_count} / {char_limit}")
-        with col2:
-            st.metric("Hashtags", f"{hashtag_count} / {hashtag_limit}")
-
-        issues = []
-        if char_count > char_limit:
-            issues.append(f"Caption exceeds {platform} character limit ({char_count}/{char_limit})")
-        if hashtag_count > hashtag_limit:
-            issues.append(f"Too many hashtags ({hashtag_count}/{hashtag_limit} for {platform})")
-        if char_count == 0:
-            issues.append("Caption is empty")
-
-        st.markdown("### Results")
-        if issues:
-            for issue in issues:
-                st.error(f"❌ {issue}")
-        else:
-            st.success("✅ Caption looks good for " + platform)
-
-        if hashtags:
-            st.markdown("**Detected Hashtags:** " + " ".join(f"`{h}`" for h in hashtags))
-
 
 # ── Publication Material Checker ──────────────────────────────────────────────
 elif selected == "Publication Material Checker":
