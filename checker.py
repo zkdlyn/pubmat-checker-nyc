@@ -69,11 +69,8 @@ POST_TYPE_RULES = {
     "photo": {
         "requires_template": True,
         "readability_threshold": 0.50,
-        # "strict_logo_order": True,
-        "requires_high_resolution": True,
+        "check_photo_quality": True,
         "min_resolution": (1080, 1080),
-        "check_centering": True,
-        "check_lighting": True,
     },
     "holiday": {
         "requires_watermark": True,
@@ -242,6 +239,74 @@ def check_readability(image, threshold=0.65):
     }
 
 
+# ── Pubmat quality check (all post types) ────────────────────────────────────
+def check_pubmat_quality(image):
+    """
+    Universal image quality checks applied to every post type.
+    Detects pixelation, blur, low resolution, and low contrast.
+
+    Pixelation detection: compares the Laplacian edge response before and after
+    a mild blur. A clean high-res image loses significant edge energy when blurred.
+    A pixelated/blocky image already has coarse, low-frequency edges that survive
+    blurring — so the ratio stays high, indicating pixelation.
+
+    Returns a dict with pass/fail, individual sub-check details, and remarks.
+    """
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    h, w = image.shape[:2]
+    issues = []
+    details = {}
+
+    # --- Resolution floor (applies to all post types) ---
+    # 720x720 is the minimum acceptable pubmat size.
+    MIN_W, MIN_H = 720, 720
+    res_ok = w >= MIN_W and h >= MIN_H
+    details["resolution"] = f"{w}x{h}"
+    if not res_ok:
+        issues.append(f"Resolution {w}x{h} is below minimum {MIN_W}x{MIN_H}")
+
+    # --- Blur check ---
+    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    details["laplacian_var"] = round(laplacian_var, 2)
+    if laplacian_var < 50:
+        issues.append("Image is blurry")
+    elif laplacian_var < 100:
+        issues.append("Image is slightly blurry")
+
+    # --- Pixelation check ---
+    # Sharp edges in a pixelated image are blocky and survive blurring more than
+    # natural edges. We compare edge energy before and after a Gaussian blur:
+    # a high survival ratio (blurred energy / original energy) signals pixelation.
+    lap_orig = cv2.Laplacian(gray, cv2.CV_64F).var()
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    lap_blurred = cv2.Laplacian(blurred, cv2.CV_64F).var()
+    # Avoid division by zero
+    if lap_orig > 0:
+        pixelation_ratio = lap_blurred / lap_orig
+    else:
+        pixelation_ratio = 1.0
+    details["pixelation_ratio"] = round(pixelation_ratio, 3)
+    # A ratio above 0.5 means blurring barely reduced edge energy — blocky/pixelated.
+    # Threshold tuned conservatively to avoid false positives on busy graphics.
+    if pixelation_ratio > 0.5 and laplacian_var > 50:
+        issues.append("Image appears pixelated or upscaled")
+
+    # --- Contrast check ---
+    contrast = float(np.std(gray))
+    details["contrast_std"] = round(contrast, 2)
+    if contrast < 20:
+        issues.append("Very low contrast — image may appear washed out or too dark")
+    elif contrast < 35:
+        issues.append("Low contrast")
+
+    overall_pass = len(issues) == 0
+    return {
+        "pass": overall_pass,
+        "details": details,
+        "remark": "OK" if overall_pass else " | ".join(issues),
+    }
+
+
 # ── Logo order check ──────────────────────────────────────────────────────────
 def check_logo_order(detected: dict, collaborators: list = None):
     """
@@ -352,19 +417,19 @@ def check_post_type_rules(post_type: str, image, readability_result: dict,
             "remark": result["remark"]
         }
 
-    # --- Photo: resolution check ---
-    if rules.get("requires_high_resolution"):
+    # --- Photo: quality checks (resolution, centering, lighting, color) ---
+    if rules.get("check_photo_quality"):
         min_w, min_h = rules.get("min_resolution", (1080, 1080))
-        res_pass = w >= min_w and h >= min_h
-        checks["resolution"] = {
-            "pass": res_pass,
-            "actual": f"{w}x{h}",
-            "required": f"{min_w}x{min_h}",
-            "remark": "OK" if res_pass else f"Image is {w}x{h}, minimum is {min_w}x{min_h}"
-        }
+        photo_issues = []
+        photo_details = {}
 
-    # --- Photo: subject centering ---
-    if rules.get("check_centering"):
+        # Resolution
+        res_pass = w >= min_w and h >= min_h
+        photo_details["resolution"] = f"{w}x{h} (required {min_w}x{min_h})"
+        if not res_pass:
+            photo_issues.append(f"Image is {w}x{h}, minimum is {min_w}x{min_h}")
+
+        # Subject centering
         edges = cv2.Canny(gray, 50, 150)
         moments = cv2.moments(edges)
         if moments["m00"] > 0:
@@ -373,24 +438,32 @@ def check_post_type_rules(post_type: str, image, readability_result: dict,
             offset_x = abs(cx - w / 2) / (w / 2)
             offset_y = abs(cy - h / 2) / (h / 2)
             centered = offset_x < 0.25 and offset_y < 0.25
+            photo_details["centering"] = f"offset_x={round(offset_x, 3)}, offset_y={round(offset_y, 3)}"
         else:
             centered = False
-            offset_x = offset_y = None
-        checks["centering"] = {
-            "pass": centered,
-            "offset_x": round(offset_x, 3) if offset_x is not None else "N/A",
-            "offset_y": round(offset_y, 3) if offset_y is not None else "N/A",
-            "remark": "Subject appears centered" if centered else "Subject may be off-center — review composition"
-        }
+            photo_details["centering"] = "Could not compute"
+        if not centered:
+            photo_issues.append("Subject may be off-center — review composition")
 
-    # --- Photo: lighting (brightness check) ---
-    if rules.get("check_lighting"):
+        # Lighting
         mean_brightness = float(np.mean(gray))
         too_dark = mean_brightness < 60
-        checks["lighting"] = {
-            "pass": not too_dark,
-            "mean_brightness": round(mean_brightness, 1),
-            "remark": "OK" if not too_dark else "Image appears dark"
+        photo_details["brightness"] = round(mean_brightness, 1)
+        if too_dark:
+            photo_issues.append("Image appears dark")
+
+        # Color check — flags grayscale/desaturated images
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        mean_saturation = float(np.mean(hsv[:, :, 1]))
+        is_colorized = mean_saturation >= 20
+        photo_details["mean_saturation"] = round(mean_saturation, 1)
+        if not is_colorized:
+            photo_issues.append("Image appears grayscale or desaturated — use a colorized photo")
+
+        checks["photo_quality"] = {
+            "pass": len(photo_issues) == 0,
+            "details": photo_details,
+            "remark": "OK" if not photo_issues else " | ".join(photo_issues),
         }
     # --- Advisory / Resolution: SGD text check ---
     if rules.get("requires_sgd"):
@@ -515,8 +588,8 @@ def generate_report(yolo_results, model, image, post_type,
         collaborators=collaborators or []
     )
 
-    # 2. Logo order (computed once, reused below)
-    order_result = check_logo_order(detected)
+    # 2. Logo order — only evaluates required logos (NYC, BP + collaborators)
+    order_result = check_logo_order(detected, collaborators=collaborators or [])
 
     # 3. Watermark (only if required by post type)
     rules = POST_TYPE_RULES.get(post_type.lower(), {})
@@ -536,10 +609,13 @@ def generate_report(yolo_results, model, image, post_type,
     else:
         wm_result = None
 
-    # 4. Readability (docTR)
+    # 4. Pubmat quality — universal check for all post types
+    pubmat_quality = check_pubmat_quality(image)
+
+    # 5. Readability (docTR)
     readability = check_readability(image)
 
-    # 5. Post-type-specific rules — pass pre-computed results to avoid redundant calls
+    # 6. Post-type-specific rules — pass pre-computed results to avoid redundant calls
     type_rules = check_post_type_rules(
         post_type, image, readability,
         detected=detected,
@@ -547,11 +623,12 @@ def generate_report(yolo_results, model, image, post_type,
         order_result=order_result
     )
 
-    # 6. Overall pass/fail — use the explicit _compliant boolean field
+    # 7. Overall pass/fail — use the explicit _compliant boolean field
     logo_issues = any(not r["_compliant"] for r in logo_rep)
 
     overall_pass = (
         not logo_issues
+        and pubmat_quality["pass"]
         and type_rules["status"] == "Pass"
     )
 
@@ -563,6 +640,7 @@ def generate_report(yolo_results, model, image, post_type,
         "overall": "PASS" if overall_pass else "FAIL",
         "logos": logos_display,
         "logo_order": order_result,
+        "pubmat_quality": pubmat_quality,
         "readability": readability,
         "type_checks": type_rules,
     }
