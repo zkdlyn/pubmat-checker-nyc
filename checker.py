@@ -51,20 +51,17 @@ POST_TYPE_RULES = {
     "advisory": {
         "requires_template": True,
         "readability_threshold": 0.70,
-        # "requires_full_page": True,
         "requires_sgd": True,
     },
     "resolution": {
         "requires_template": True,
         "readability_threshold": 0.70,
-        # "requires_full_page": True,
         "requires_sgd": True,
     },
     "hiring": {
         "requires_watermark": True,
         "requires_template": True,
         "readability_threshold": 0.65,
-        # "strict_logo_order": True,
     },
     "photo": {
         "requires_template": True,
@@ -76,13 +73,12 @@ POST_TYPE_RULES = {
         "requires_watermark": True,
         "requires_template": False,
         "readability_threshold": 0.50,
-        # "strict_logo_order": False,
+
     },
     "other": {
         "requires_watermark": True,
         "requires_template": False,
         "readability_threshold": 0.50,
-        # "strict_logo_order": True,
     }
 }
 
@@ -567,7 +563,7 @@ def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
 
 # ── Master report generator ───────────────────────────────────────────────────
 def generate_report(yolo_results, model, image, post_type,
-                    collaborators=None, conf_threshold=0.25):
+                    collaborators=None, conf_threshold=0.8):
     """
     Runs all checks and returns a unified audit report + annotated image.
 
