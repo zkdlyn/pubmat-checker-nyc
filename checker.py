@@ -438,8 +438,20 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
 
     # 3. Logo order (all post types)
     order_result = check_logo_order(detected, collaborators=collaborators or [])
+    
+    # 4. Pubmat quality (all post types)
+    pubmat_quality = check_pubmat_quality(image)
 
-    # 4. Watermark (conditional)
+    # build audit dict incrementally 
+    audit = {
+        "post_type":      post_type,
+        "overall":        None,         # filled in after all checks run
+        "logos":          [{k: v for k, v in r.items() if not k.startswith("_")} for r in logo_rep],
+        "logo_order":     order_result,
+        "pubmat_quality": pubmat_quality,
+    }
+
+    # .5 Watermark (conditional)
     wm_result = None
     if rules.get("requires_watermark"):
         bottom_pairs = [(w, b) for w, b in zip(ocr_words, ocr_boxes) if b[1] >= 0.85]
@@ -455,57 +467,42 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
         color = (0, 255, 0) if wm_result["watermark_present"] else (255, 0, 0)
         cv2.putText(img, label_text, (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
-    # 5. Pubmat quality (all post types)
-    pubmat_quality = check_pubmat_quality(image)
+    
 
-    # 6. Readability score (all post types)
-    readability = check_readability(image, ocr_confidences, ocr_boxes)
+    # 6. Readability score 
+    if "readability_threshold" in rules:
+        threshold = rules["readability_threshold"]
+        readability = check_readability(image, ocr_confidences, ocr_boxes)
+        score = readability["score"]
+        audit["readability"] = {
+            **readability,
+            "threshold": threshold,
+            "pass":      score >= threshold,
+            "remark":    "OK" if score >= threshold else f"Score {score} below threshold {threshold}",
+        }
 
     # 7. Conditional checks — each is a plain function, applied based on rules
-    type_checks = {}
-
-    threshold = rules.get("readability_threshold", 0.65)
-    score = readability["score"]
-    type_checks["readability"] = {
-        "pass": score >= threshold,
-        "score": score,
-        "threshold": threshold,
-        "remark": "OK" if score >= threshold else f"Score {score} below threshold {threshold}",
-    }
 
     if rules.get("requires_sgd"):
-        type_checks["sgd"] = check_sgd(ocr_words)
+        audit["sgd"] = check_sgd(ocr_words)
 
     if rules.get("check_photo_quality"):
-        type_checks["photo_quality"] = check_photo_quality(
+        audit["photo_quality"] = check_photo_quality(
             image, min_resolution=rules.get("min_resolution", (1080, 1080))
         )
 
     # 8. Overall pass/fail
+    ALWAYS_REQUIRED = {"post_type", "logos", "overall"}
     logo_issues = any(not r["_compliant"] for r in logo_rep)
-    type_checks_pass = all(v["pass"] for v in type_checks.values())
+    conditional_checks ={
+        k: v for k, v in audit.items() if k not in ALWAYS_REQUIRED and isinstance(v, dict) and "pass" in v
+    }
     overall_pass = (
         not logo_issues
-        and order_result["pass"]
-        and pubmat_quality["pass"]
-        and type_checks_pass
+        and all(v["pass"] for v in conditional_checks.values())
+
     )
 
-    audit = {
-        "post_type": post_type,
-        "overall": "PASS" if overall_pass else "FAIL",
-        "logos": [{k: v for k, v in r.items() if not k.startswith("_")} for r in logo_rep],
-        "logo_order": order_result,
-        "pubmat_quality": pubmat_quality,
-        "readability": readability,
-        "type_checks": {
-            "post_type": post_type,
-            "status": "Pass" if type_checks_pass else "Fail",
-            "checks": type_checks,
-        },
-    }
-
-    if wm_result is not None:
-        audit["watermark"] = wm_result
+    audit["overall"] = "PASS" if overall_pass else "FAIL"
 
     return audit, img
