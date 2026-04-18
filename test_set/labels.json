@@ -326,10 +326,10 @@
     "collaborators": ["sk", "yorp"],
     "ground_truth": {
       "logo_nyc":       true,
-      "logo_bp":        true,
+      "logo_bp":        false,
       "logo_sk":        false,
       "logo_yorp":      false,
-      "logo_order":     true,
+      "logo_order":     false,
       "pubmat_quality": true,
       "readability":    true,
       "watermark":      false
