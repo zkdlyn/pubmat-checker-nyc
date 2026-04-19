@@ -63,11 +63,11 @@ POST_TYPE_RULES = {
     "news": {
         "requires_watermark": True,
         "requires_template": True,
-        "readability_threshold": 0.65,
+        "readability_threshold": 0.70,
     },
     "quotes": {
         "requires_template": True,
-        "readability_threshold": 0.60,
+        "readability_threshold": 0.70,
     },
     "advisory": {
         "requires_template": True,
@@ -82,11 +82,10 @@ POST_TYPE_RULES = {
     "hiring": {
         "requires_watermark": True,
         "requires_template": True,
-        "readability_threshold": 0.65,
+        "readability_threshold": 0.70,
     },
     "photo": {
         "requires_template": True,
-        # "readability_threshold": 0.50,
         "check_photo_quality": True,
         "min_resolution": (1080, 1080),
     },
@@ -189,31 +188,15 @@ def check_readability(image, confidences, boxes, threshold=0.65):
             "remark": "No text detected",
         }
 
-    ocr_score = sum(confidences) / len(confidences)
-    img_h = image.shape[0]
-
-    heights = [(y1 - y0) * img_h for (x0, y0, x1, y1) in boxes]
-    if heights:
-        heights.sort()
-        p10 = heights[int(len(heights) * 0.10)]  # 10th percentile
-        # normalize against image height so threshold is resolution-independent
-        p10_ratio = p10 / img_h
-        size_score = 1.0 if p10_ratio >= 0.018 else 0.7 if p10_ratio >= 0.011 else 0.4
-
-    contrast_score = min(float(np.std(gray)) / 60, 1.0)
-
-    blur = cv2.Laplacian(gray, cv2.CV_64F).var()
-    blur_score = 1.0 if blur >= 100 else 0.6 if blur >= 50 else 0.3
-
-    final = round(0.4 * ocr_score + 0.2 * size_score + 0.2 * contrast_score + 0.2 * blur_score, 3)
-    label = "Readable" if final >= threshold else "Moderate readability" if final >= 0.5 else "Low readability"
+    ocr_score = round(sum(confidences) / len(confidences),3)
+    label = "Readable" if ocr_score >= threshold else "Moderate readability" if ocr_score >= 0.5 else "Low readability"
 
     return {
-        "pass": final >= threshold,
+        "pass": ocr_score >= threshold,
         "label": label,
-        "score": final,
+        "score": ocr_score,
         "readability_status": label,
-        "remark": "OK" if final >= threshold else "Improve text clarity",
+        "remark": "OK" if ocr_score >= threshold else "Improve text clarity",
     }
 
 
@@ -354,7 +337,7 @@ def check_logo_order(detected, collaborators=None):
     }
 
 
-def logo_report(results, model, img, conf_threshold=0.25, collaborators=None):
+def logo_report(results, model, img, conf_threshold=0.8, collaborators=None):
     """
     NYC and BP are always required.
     SK and YORP are only checked when explicitly listed in collaborators.
@@ -506,3 +489,4 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
     audit["overall"] = "PASS" if overall_pass else "FAIL"
 
     return audit, img
+

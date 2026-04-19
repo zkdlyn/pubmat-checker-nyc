@@ -1,0 +1,1421 @@
+[
+  {
+    "image": "test_1.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark Missing"
+  },
+  {
+    "image": "test_2.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_3.png",
+    "post_type": "other",
+    "collaborators": [
+      "sk",
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": false,
+      "logo_sk": true,
+      "logo_yorp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_4.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    }
+  },
+  {
+    "image": "test_5.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": false
+    },
+    "notes": "Photo quality is poor due to blurriness and low resolution."
+  },
+  {
+    "image": "test_6.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_7.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_8.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_9.png",
+    "post_type": "other",
+    "collaborators": [
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_yorp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_10.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_11.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_12.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_13.jpg",
+    "post_type": "other",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_14.png",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_15.png",
+    "post_type": "other",
+    "collaborators": [
+      "sk",
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": false,
+      "logo_sk": false,
+      "logo_yorp": false,
+      "logo_order": false,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": false
+    },
+    "notes": "Watermark Missing"
+  },
+  {
+    "image": "test_16.png",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": false,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_17.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_18.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_19.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": "Photo quality is poor due to blurriness and low resolution."
+  },
+  {
+    "image": "test_20.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_21.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_22.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_23.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_24.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_25.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_26.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    }
+  },
+  {
+    "image": "test_27.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_28.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    }
+  },
+  {
+    "image": "test_29.jpg",
+    "post_type": "holiday",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong \u2014 SK leftmost, BP center, NYC rightmost. Watermark missing."
+  },
+  {
+    "image": "test_30.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "sk",
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": false,
+      "logo_sk": true,
+      "logo_yorp": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "BP logo not present. Logo order invalid. Watermark missing."
+  },
+  {
+    "image": "test_31.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_32.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_33.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_34.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": false
+    },
+    "notes": "Screenshot of a video call \u2014 low resolution, low contrast."
+  },
+  {
+    "image": "test_35.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_36.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": false
+    },
+    "notes": "Photo quality poor \u2014 slightly blurry, background out of focus."
+  },
+  {
+    "image": "test_37.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_38.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "watermark": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_39.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_40.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_41.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": false,
+      "photo_quality": false
+    },
+    "notes": "Screenshot of a video call \u2014 low resolution, low contrast, poor pubmat quality."
+  },
+  {
+    "image": "test_42.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_43.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_44.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_45.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_47.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_49.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_yorp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_50.jpg",
+    "post_type": "advisory",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Formal advisory document \u2014 no watermark required. No SGD visible."
+  },
+  {
+    "image": "test_51.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_52.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_53.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_54.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_55.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_56.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_57.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark missing."
+  },
+  {
+    "image": "test_58.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_59.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_60.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_61.jpg",
+    "post_type": "advisory",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_62.jpg",
+    "post_type": "holiday",
+    "collaborators": [
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_yorp": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong. Watermark missing."
+  },
+  {
+    "image": "test_63.jpg",
+    "post_type": "holiday",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong \u2014 SK leftmost, BP center, NYC rightmost. Watermark missing."
+  },
+  {
+    "image": "test_64.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "yorp"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_yorp": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong. Watermark missing."
+  },
+  {
+    "image": "test_65.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong \u2014 NYC rightmost. Watermark missing."
+  },
+  {
+    "image": "test_66.png",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_67.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_68.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_69.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_70.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong. Watermark missing."
+  },
+  {
+    "image": "test_71.jpg",
+    "post_type": "advisory",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_72.png",
+    "post_type": "news",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong. Watermark missing."
+  },
+  {
+    "image": "test_73.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_74.jpg",
+    "post_type": "resolution",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true,
+      "sgd": false
+    },
+    "notes": "Resolution post \u2014 no SGD visible."
+  },
+  {
+    "image": "test_75.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_76.png",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_77.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_78.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_79.png",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_80.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_81.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_82.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_83.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_84.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark missing."
+  },
+  {
+    "image": "test_85.jpg",
+    "post_type": "news",
+    "collaborators": [
+      "sk"
+    ],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_sk": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Logo order wrong. Watermark missing."
+  },
+  {
+    "image": "test_86.jpg",
+    "post_type": "other",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark missing."
+  },
+  {
+    "image": "test_87.jpg",
+    "post_type": "advisory",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_88.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_89.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_90.png",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_91.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": false,
+      "photo_quality": false
+    },
+    "notes": "Photo quality poor \u2014 image is dark/underexposed, low contrast."
+  },
+  {
+    "image": "test_92.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_93.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_94.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_95.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_96.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_97.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": false,
+      "logo_bp": true,
+      "logo_order": false,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "NYC logo missing. Watermark missing."
+  },
+  {
+    "image": "test_98.jpg",
+    "post_type": "advisory",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": true,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_99.jpg",
+    "post_type": "holiday",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark missing."
+  },
+  {
+    "image": "test_100.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": true
+    },
+    "notes": ""
+  },
+  {
+    "image": "test_46.jpg",
+    "post_type": "news",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "watermark": false,
+      "pubmat_quality": true,
+      "readability": true
+    },
+    "notes": "Watermark missing \u2014 no social media handles visible."
+  },
+  {
+    "image": "test_48.jpg",
+    "post_type": "photo",
+    "collaborators": [],
+    "ground_truth": {
+      "logo_nyc": true,
+      "logo_bp": true,
+      "logo_order": true,
+      "pubmat_quality": true,
+      "photo_quality": false
+    },
+    "notes": "Photo quality poor \u2014 dark/underexposed indoor lighting."
+  }
+]
