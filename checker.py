@@ -451,7 +451,8 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
         cv2.putText(img, label_text, (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
     
-
+    if wm_result is not None:
+        audit["watermark"] = wm_result
     # 6. Readability score 
     if "readability_threshold" in rules:
         threshold = rules["readability_threshold"]
@@ -473,6 +474,7 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
         audit["photo_quality"] = check_photo_quality(
             image, min_resolution=rules.get("min_resolution", (1080, 1080))
         )
+
 
     # 8. Overall pass/fail
     ALWAYS_REQUIRED = {"post_type", "logos", "overall"}
