@@ -2,6 +2,8 @@
 checker.py — Pubmat validation functions for NYC post compliance checks.
 """
 
+from unittest import result
+
 import cv2
 import numpy as np
 import difflib
@@ -16,13 +18,11 @@ import os
 # ── Lazy-load docTR model ─────────────────────────────────────────────────────
 _doctr_model = None
 
-
 def get_doctr_model():
     global _doctr_model
     if _doctr_model is None:
         _doctr_model = ocr_predictor(pretrained=True)
     return _doctr_model
-
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 def _run_doctr(image_bgr):
@@ -43,8 +43,10 @@ def _run_doctr(image_bgr):
 
 def _extract_ocr_data(doctr_result):
     """
-    Flattens a docTR result into parallel lists of words, confidences,
-    and (x0, y0, x1, y1) relative geometry tuples.
+    Flattens a docTR result into parallel lists:
+    - words: list of recognized word strings
+    - confidences: list of OCR confidence scores (0-1)
+    - boxes: list of bounding boxes as (x0, y0, x1, y1) relative coordinates (0-1)
     """
     words, confidences, boxes = [], [], []
     for page in doctr_result.pages:
@@ -57,8 +59,19 @@ def _extract_ocr_data(doctr_result):
                     boxes.append((x0, y0, x1, y1))
     return words, confidences, boxes
 
+def _make_result(passed: bool, label_ok: str, label_fail: str, 
+                 remark_ok: str="OK", remark_fail: str="Issue found", 
+                 details: dict = None) -> dict:
+    return{
+        "pass": passed,
+        "label": label_ok if passed else label_fail,
+        "remark": remark_ok if passed else remark_fail,
+        "details": details or {},
+    }
+    
 
 # ── Rule config per post type ─────────────────────────────────────────────────
+
 POST_TYPE_RULES = {
     "news": {
         "requires_watermark": True,
@@ -79,15 +92,14 @@ POST_TYPE_RULES = {
         "readability_threshold": 0.70,
         "requires_sgd": True,
     },
-    "hiring": {
+    "opportunity": {
         "requires_watermark": True,
         "requires_template": True,
         "readability_threshold": 0.70,
     },
     "photo": {
         "requires_template": True,
-        "check_photo_quality": True,
-        "min_resolution": (1080, 1080),
+        "check_photo_quality": True
     },
     "holiday": {
         "requires_watermark": True,
@@ -112,9 +124,9 @@ FUZZY_THRESHOLD = 0.75
 
 # ── Check functions ───────────────────────────────────────────────────────────
 
-def check_watermark(image, precomputed_words=None, precomputed_boxes=None):
+def check_watermark(image, precomputed_words=None, precomputed_boxes=None) -> dict:
     """
-    Fuzzy-matches known watermark handles against the bottom 15% of the image.
+    Fuzzy-matches  watermark handles against the bottom 15% of the image.
     Accepts pre-computed OCR data (filtered to y0 >= 0.85) to avoid a second
     docTR call when called from generate_report(). Falls back to cropping and
     running OCR directly if none supplied.
@@ -126,7 +138,8 @@ def check_watermark(image, precomputed_words=None, precomputed_boxes=None):
         words = precomputed_words
         raw_boxes = precomputed_boxes or []
         boxes_abs = [
-            (int(x0 * img_w), int(y0 * img_h), int(x1 * img_w), int(y1 * img_h))
+            (int(x0 * img_w), int(y0 * img_h), 
+             int(x1 * img_w), int(y1 * img_h))
             for (x0, y0, x1, y1) in raw_boxes
         ]
     else:
@@ -141,7 +154,7 @@ def check_watermark(image, precomputed_words=None, precomputed_boxes=None):
 
     words_lower = [w.lower() for w in words]
     full_text = " ".join(words_lower)
-    details = {}
+    handle_details = {}
     missing = []
 
     for handle in WATERMARK_HANDLES:
@@ -155,97 +168,99 @@ def check_watermark(image, precomputed_words=None, precomputed_boxes=None):
             ),
         )
         found = best >= FUZZY_THRESHOLD
-        details[handle] = {"found": found, "score": round(best, 3)}
+        handle_details[handle] = {"found": found, "score": round(best, 3)}
         if not found:
             missing.append(handle)
 
     passed = len(missing) == 0
-    return {
-        "pass": passed,
-        "watermark_present": passed,
-        "label": "Watermark OK" if passed else "Watermark missing or incorrect",
-        "missing": missing,
-        "remark": "OK" if passed else f"Missing: {', '.join(missing)}",
-        "details": details,
-        "boxes": boxes_abs,
-    }
+    return _make_result(
+        passed=passed,
+        label_ok="Watermark OK",
+        label_fail="Watermark missing or incorrect",
+        remark_fail= f"Missing: {', '.join(missing)}"
+    )
+    result["missing"] = missing
+    result["boxes"] = boxes_abs
+    return result
 
 
-def check_readability(image, confidences, boxes, threshold=0.65):
+def check_readability(image, confidences:list, boxes: list, 
+                    threshold: float =0.65) -> dict:
     """
-    Composite readability score: 40% OCR confidence, 20% text size,
-    20% contrast, 20% blur sharpness.
-    boxes: list of (x0, y0, x1, y1) relative geometry tuples.
+    OCR-confidence-based readability check.
     """
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
     if not confidences:
-        return {
-            "pass": False,
-            "label": "No readable text found",
-            "score": 0.0,
-            "readability_status": "No readable text found",
-            "remark": "No text detected",
-        }
+        return _make_result(
+            passed=False,
+            label_ok="",
+            label_fail="No readable text_found",
+            remark_fail="No text detected",
+        )
 
-    ocr_score = round(sum(confidences) / len(confidences),3)
-    label = "Readable" if ocr_score >= threshold else "Moderate readability" if ocr_score >= 0.5 else "Low readability"
+    score = round(sum(confidences) / len(confidences),3)
+    passed = score >= threshold 
+    if score >= threshold:
+        label = "Readable"
+    elif score >= threshold * 0.5:
+        label = "Moderately readable"
+    else:
+        label = "Low readability"
+    return _make_result(
+        passed=passed,
+        label_ok=label,
+        label_fail=label,
+        remark_ok=f"Average OCR confidence: {score}",
+        remark_fail=f"Average OCR confidence: {score} below threshold {threshold}",
+        details={"average_confidence": score, "num_words": len(confidences)},
+    )
 
-    return {
-        "pass": ocr_score >= threshold,
-        "label": label,
-        "score": ocr_score,
-        "readability_status": label,
-        "remark": "OK" if ocr_score >= threshold else "Improve text clarity",
-    }
 
-
-def check_pubmat_quality(image):
+def check_pubmat_quality(image) -> dict:
     """Universal image quality check: resolution, blur, contrast. Runs for all post types."""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     h, w = image.shape[:2]
     issues = []
 
-    if w < 720 or h < 720:
-        issues.append("Low resolution")
+    if w < 1080 or h < 1080:
+        issues.append(f"Low resolution ({w}x{h}). Minimum is 1080x1080 px.")
     if cv2.Laplacian(gray, cv2.CV_64F).var() < 50:
-        issues.append("Image appears blurry")
+        issues.append("Image appears blurry.")
     if np.std(gray) < 30:
-        issues.append("Low contrast")
+        issues.append("Low contrast.")
 
-    passed = len(issues) == 0
-    return {
-        "pass": passed,
-        "label": "Good quality" if passed else "Quality Issues",
-        "remark": "OK" if passed else " | ".join(issues),
-    }
+    return _make_result(
+        len(issues) == 0,
+        label_ok="Pubmat quality OK",
+        label_fail="Pubmat quality issues",
+        remark_fail=" | ".join(issues),
+        details={"Resolution": f"{w}x{h}", "Blur Metric": round(cv2.Laplacian(gray, cv2.CV_64F).var(), 1), "Contrast Metric": round(np.std(gray), 1)},
+    )
 
-
-def check_sgd(ocr_words):
+def check_sgd(ocr_words: list) ->dict:
     """
     Checks that 'SGD' appears as a whole word in the OCR output.
     Applied to: advisory, resolution.
     """
-    extracted_text = " ".join(ocr_words).lower()
-    found = bool(re.search(r"\bsgd\b", extracted_text))
-    return {
-        "pass": found,
-        "remark": "SGD present" if found else "Use SGD for resolutions/advisories",
-    }
+    found = bool(re.search(r"\bsgd\b"," ".join(ocr_words).lower()))
+    return _make_result(
+        passed=found,
+        label_ok="SGD present",
+        label_fail="SGD MISSING",
+        remark_fail="Use SGD for resolutions/advisories",
+    )
 
 
-def check_photo_quality(image, min_resolution=(1080, 1080)):
+def check_photo_quality(image) ->dict:
     """
     Photo-specific quality checks: resolution, subject centering, brightness,
     and colour saturation.
     Applied to: photo.
 
-    Note: centering uses Canny edge centroid as a proxy for subject position —
-    may be inaccurate on text-heavy or heavily bordered layouts.
+
     """
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     h, w = image.shape[:2]
-    min_w, min_h = min_resolution
+    min_w, min_h = 1080, 1080
     issues = []
     details = {}
 
@@ -389,7 +404,7 @@ def logo_report(results, model, img, conf_threshold=0.8, collaborators=None):
 
 
 # ── Master report generator ───────────────────────────────────────────────────
-def generate_report(yolo_results, model, image, post_type, collaborators=None, conf_threshold=0.25):
+def generate_report(image, logo_model, post_type, collaborators=None):
     """
     Runs all checks and returns a unified audit report + annotated image.
     docTR OCR is run exactly once and shared across all checks.
@@ -413,9 +428,9 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
     ocr_words, ocr_confidences, ocr_boxes = _extract_ocr_data(_run_doctr(image))
 
     # 2. Logo detection + annotation
-    logo_rep, detected, img = logo_report(
-        yolo_results, model, img,
-        conf_threshold=conf_threshold,
+
+    logo_rep, detected, img = logo_report( img, model=logo_model,
+        conf_threshold=0.8,
         collaborators=collaborators or [],
     )
 
@@ -463,7 +478,7 @@ def generate_report(yolo_results, model, image, post_type, collaborators=None, c
             "remark":    "OK" if score >= threshold else f"Score {score} below threshold {threshold}",
         }
 
-    # 7. Conditional checks — each is a plain function, applied based on rules
+    # 7. 
 
     if rules.get("requires_sgd"):
         audit["sgd"] = check_sgd(ocr_words)
