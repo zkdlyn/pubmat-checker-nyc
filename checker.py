@@ -309,7 +309,7 @@ def check_photo_quality(image) ->dict:
     h, w = image.shape[:2]
 
     end_y = int(h * 0.80)
-
+    # crop out colored template 
     cropped = image[0:end_y, 0:w]
     hsv = cv2.cvtColor(cropped, cv2.COLOR_BGR2HSV)
     s = hsv[:, :, 1]
