@@ -55,6 +55,8 @@ def _extract_ocr_data(doctr_result):
         for block in page.blocks:
             for line in block.lines:
                 for word in line.words:
+                    if word.confidence <0.8:
+                        continue # skip low confidence detections (to avoid text in bg)
                     words.append(word.value)
                     confidences.append(word.confidence)
                     (x0, y0), (x1, y1) = word.geometry
@@ -63,12 +65,13 @@ def _extract_ocr_data(doctr_result):
 
 def _make_result(passed: bool, label_ok: str, label_fail: str, 
                  remark_ok: str="OK", remark_fail: str="Issue found", 
-                 details: dict = None) -> dict:
+                 details: dict = None, level:str = "error") -> dict:
     return{
         "pass": passed,
         "label": label_ok if passed else label_fail,
         "remark": remark_ok if passed else remark_fail,
         "details": details or {},
+
     }
     
 
@@ -181,14 +184,39 @@ def check_watermark(image, precomputed_words=None, precomputed_boxes=None) -> di
         label_ok="Watermark OK",
         label_fail="Watermark missing or incorrect",
         remark_fail= f"Missing: {', '.join(missing)}",
-        level ="error",
+        # level ="error",
     )
     result["missing"] = missing
     result["boxes"] = boxes_abs
     return result
 
+def _mask_regions(image: np.ndarray, logo_boxes: list,
+                  mask_bottom_pct: float = 0.15) -> np.ndarray:
+    """
+    Returns a copy of the image with logo regions and the bottom
+    watermark strip filled with white (255,255,255), so docTR
+    does not OCR text from those areas.
+    """
+    masked = image.copy()
+    h, w   = image.shape[:2]
 
-def check_readability(image, confidences:list, boxes: list, 
+    # blank each detected logo bounding box
+    for (x0, y0, x1, y1) in logo_boxes:
+        # add a small padding so edge text is also excluded
+        pad = 10
+        x0 = max(0, x0 - pad)
+        y0 = max(0, y0 - pad)
+        x1 = min(w, x1 + pad)
+        y1 = min(h, y1 + pad)
+        masked[y0:y1, x0:x1] = 255
+
+    # blank bottom strip (watermark zone)
+    strip_y = int(h * (1.0 - mask_bottom_pct))
+    masked[strip_y:h, 0:w] = 255
+
+    return masked
+
+def check_readability(confidences:list, 
                     threshold: float =0.65) -> dict:
     """
     OCR-confidence-based readability check.
@@ -216,7 +244,8 @@ def check_readability(image, confidences:list, boxes: list,
         remark_ok=f"Average OCR confidence: {score}",
         remark_fail=f"Average OCR confidence: {score} below threshold {threshold}",
         details={"average_confidence": score, "num_words": len(confidences)},
-        level ="error",
+        level="error",
+        
     )
 
 
@@ -241,7 +270,6 @@ def check_pubmat_quality(image) -> dict:
         details={"Resolution": f"{w}x{h}", 
                  "Blur Metric": round(cv2.Laplacian(gray, cv2.CV_64F).var(), 1), 
                  "Contrast Metric": round(np.std(gray), 1)},
-        level ="warning",
     )
 
 def check_sgd(ocr_words: list) ->dict:
@@ -255,7 +283,7 @@ def check_sgd(ocr_words: list) ->dict:
         label_ok="SGD present",
         label_fail="SGD MISSING",
         remark_fail="Use SGD for resolutions/advisories",
-        level ="error",
+        # level ="error",
     )
 
 
@@ -274,7 +302,7 @@ def check_photo_quality(image) ->dict:
     details = {}
 
     # Resolution
-    details["resolution"] = f"{w}x{h} (required {min_w}x{min_h})"
+    details["resolution"] = f"{w}x{h} (required at least {min_w}x{min_h})"
     if w < min_w or h < min_h:
         issues.append(f"Image is {w}x{h}, minimum is {min_w}x{min_h}")
 
@@ -295,7 +323,7 @@ def check_photo_quality(image) ->dict:
         label_fail="Photo quality issues",
         remark_fail=" | ".join(issues),
         details=details,
-        level ="warning",
+        # level ="warning",
     )
 
 def check_logo_order(detected:dict, collaborators:list=None) -> dict:
@@ -353,7 +381,7 @@ def check_logo_order(detected:dict, collaborators:list=None) -> dict:
             "order": detected_order,
             "positions": {k: round(v, 1) for k, v in positions.items()},
         },
-        level ="error",
+        # level ="error",
     )
 
 
@@ -391,6 +419,7 @@ def logo_report(image, model, conf_threshold:float=0.8, collaborators:list=None)
                 "detected": False, 
                 "confidence": None,
                 "status": "Missing", 
+                "pass": False,
                 "remark": "Add logo",
                 "level": "error",
             })
@@ -401,31 +430,52 @@ def logo_report(image, model, conf_threshold:float=0.8, collaborators:list=None)
                 "detected": True, 
                 "confidence": round(entry["conf"], 3),
                 "status": entry["status"].capitalize(), 
+                "pass":       is_correct,
                 "remark": "OK" if is_correct else f"Incorrect version detected",
                 "level": "error",
             })
+            img_annotated = image.copy()
             xyxy = entry["box"].xyxy[0].cpu().numpy().astype(int)
             color = (0, 255, 0) if is_correct else (0, 0, 255)
-            cv2.rectangle(image, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
-            cv2.putText(image, logo.upper(), (xyxy[0], xyxy[1] - 10),
+            cv2.rectangle(img_annotated, (xyxy[0], xyxy[1]), (xyxy[2], xyxy[3]), color, 2)
+            cv2.putText(img_annotated, logo.upper(), (xyxy[0], xyxy[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+    
+    all_pass = all(r["pass"] for r in report)
+    return {
+        "pass":    all_pass,
+        "level":   "error",
+        "label":   "All logos OK" if all_pass else "Logo issues found",
+        "remark":  "OK" if all_pass else f"{sum(1 for r in report if not r['pass'])} logo(s) failed",
+        "details": {"logos": report},   # individual results still accessible here
+    }, detected, img_annotated
 
-    return report, detected, image
+
+def _get_logo_boxes_abs(detected: dict, img_shape: tuple) -> list:
+    """Converts YOLO xyxy boxes to absolute int coords for masking."""
+    boxes = []
+    for entry in detected.values():
+        if entry is None:
+            continue
+        xyxy = entry["box"].xyxy[0].cpu().numpy().astype(int)
+        boxes.append((int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])))
+    return boxes
 
 # work in progress ---
 # def check_template(image, post_type) -> dict:
 #     pass
 
-# def check_spelling(text) -> dict:
-#     spell = SpellChecker()
-#     SPELL_IGNORE = {
-#         "nyc", "bp", "sk", "yorp", "sgd", "ngo",
+def check_spelling(text) -> dict:
+    spell = SpellChecker()
+    SPELL_IGNORE = {
+        "nyc", "bp", "sk", "yorp", "sgd", "ngo",
 
-#         "pilipinas", "kabataan", "sanggunian", "baranggay", "kumusta",
-#         "ang", "mga",  "ng",
+        "pilipinas", "kabataan", "sanggunian", "baranggay", "kumusta",
+        "ang", "mga",  "ng",
 
-#         "webinar", "maligayang", "pagbati", "araw"
-#     }
+        "webinar", "maligayang", "pagbati", "araw"
+    }
+    pass
 
 # ── Master report generator ───────────────────────────────────────────────────
 def generate_report(image, logo_model, post_type: str, collaborators:list=None) -> tuple:
@@ -440,25 +490,34 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
         audit (dict)    - full structured report
         img   (ndarray) - annotated image with bounding boxes
     """
+    
+    rules = POST_TYPE_RULES.get(post_type.lower(), {})
+
     if image is None or image.size == 0:
         raise ValueError("Image could not be decoded or is empty.")
     img = image.copy()
-    rules = POST_TYPE_RULES.get(post_type.lower(), {})
     h_img = img.shape[0]
 
-    
-    # OCR reused by readability, watermark, and SGD
-    ocr_words, ocr_confidences, ocr_boxes = _extract_ocr_data(_run_doctr(image))
-
-    # Universal Checks  (logo, order, quality)
-    logo_rep, detected, img = logo_report(
-        image, 
+    # Logo detection
+    logo_result, detected, img_annotated = logo_report(
+        img, 
         model=logo_model,
         conf_threshold=0.8,
         collaborators=collaborators or [],
     )
+    audit["logos"] = logo_result  
+    # Masked image for OCR 
+    logo_boxes_abs = _get_logo_boxes_abs(detected, img.shape)
+    masked_image   = _mask_regions(img_annotated, logo_boxes_abs, mask_bottom_pct=0.15)
+
+    # OCR on masked image — logos and watermark strip are blank 
+    ocr_words, ocr_confidences, ocr_boxes = _extract_ocr_data(_run_doctr(masked_image))
+
+    # Logo Order Check
     logo_order = check_logo_order(detected, collaborators=collaborators or [])
-    pubmat_quality = check_pubmat_quality(image)
+    
+    # PubMat Quality Check
+    pubmat_quality = check_pubmat_quality(img)
 
     # --- build audit dict incrementally ---
     audit = {
@@ -468,6 +527,7 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
         "logo_order":     logo_order,
         "pubmat_quality": pubmat_quality,
     }
+
     # Conditional checks based on post type rules:
     
     # Watermark check
@@ -479,18 +539,20 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
             precomputed_words=[p[0] for p in bottom_pairs],
             precomputed_boxes=[p[1] for p in bottom_pairs],
         )
+        audit["watermark"]["level"] = rules["requires_watermark"]
         for (x0, y0, x1, y1) in audit["watermark"]["boxes"]:
-            cv2.rectangle(img, (x0, y0), (x1, y1), (255, 200, 0), 1)
+            cv2.rectangle(img_annotated, (x0, y0), (x1, y1), (255, 200, 0), 1)
         label_text = "Watermark OK" if audit["watermark"]["watermark_present"] \
             else f"Watermark MISSING: {', '.join(audit['watermark']['missing'])}"
+        
         color = (0, 255, 0) if audit["watermark"]["watermark_present"] else (255, 0, 0)
-        cv2.putText(img, label_text, (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
+        cv2.putText(img_annotated, label_text, (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
         
     # Readability check
     if "readability_threshold" in rules:
         threshold = rules["readability_threshold"]
-        readability = check_readability(image, ocr_confidences, ocr_boxes, threshold=threshold)
+        readability = check_readability(img, ocr_confidences, ocr_boxes, threshold=threshold)
         audit["readability"] = readability
     
     # SGD check
@@ -500,18 +562,18 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
     # Photo 
     if rules.get("check_photo_quality"):
         audit["photo_quality"] = check_photo_quality(
-            image )
+            img)
 
 
     # 8. Overall pass/fail
-    logos_pass = all(r["pass"] for r in logo_rep)
+
     SKIP_KEYS  = {"post_type", "overall", "logos"}
-    checks_pass = all(
+    overall_pass = all(
     v["pass"] or v.get("level") != "error"
     for k, v in audit.items()
     if k not in SKIP_KEYS and isinstance(v, dict) and "pass" in v
 )
-    audit["overall"] = "PASS" if (logos_pass and checks_pass) else "FAIL"
+    audit["overall"] = "PASS" if overall_pass else "FAIL"
  
     return audit, img
 
