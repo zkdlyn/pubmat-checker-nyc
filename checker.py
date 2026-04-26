@@ -13,7 +13,6 @@ from doctr.io import DocumentFile
 from PIL import Image
 import tempfile
 import os
-
 from spellchecker import SpellChecker
 
 
@@ -73,6 +72,29 @@ def _make_result(passed: bool, label_ok: str, label_fail: str,
         "details": details or {},
 
     }
+
+SPELL_WORD_LISTS = [
+    "word_list/tagalog_word_list.txt",   
+    "word_list/custom_list.txt",  
+    "word_list/filipino_word_list.txt",
+    "word_list/hiligaynon_word_list.txt",
+    "word_list/ilocano_word_list.txt",
+    "word_list/cebuano_word_list.txt"
+
+]
+
+def load_spell_checker(wordlist_paths: list[str]) -> SpellChecker:
+    """
+    Initialize SpellChecker and load Filipino/Tagalog + custom word lists.
+    """
+    # Use language=None if you're ONLY using custom dictionaries,
+    # or "en" if you still want English base + your additions
+    spell = SpellChecker(language="en")
+
+    for path in wordlist_paths:
+        spell.word_frequency.load_text_file(path)
+
+    return spell
     
 
 # ── Rule config per post type ─────────────────────────────────────────────────
@@ -82,27 +104,30 @@ POST_TYPE_RULES = {
         "requires_watermark": "error",
         "requires_template": "error",
         "readability_threshold": 0.70,
+        "requires_spell_check": "warning",
     },
     "quotes": {
         "requires_template": "error",
         "readability_threshold": 0.70,
+        "requires_spell_check": "warning",
     },
     "advisory": {
         "requires_template": T"error",
         "readability_threshold": 0.70,
         "requires_sgd": "error",
-        "level": "error"
+        "requires_spell_check": "warning"
     },
     "resolution": {
         "requires_template": "error",
         "readability_threshold": 0.70,
-        "requires_sgd": "errpr",
-        "level": "error"
+        "requires_sgd": "error",
+        "requires_spell_check": "warning"
     },
     "opportunity": {
         "requires_watermark": "error",
         "requires_template": "error",
         "readability_threshold": 0.70,
+        "requires_spell_check": "warning",
     },
     "photo": {
         "requires_template": "error",
@@ -112,10 +137,12 @@ POST_TYPE_RULES = {
         "requires_watermark": "error",
         "requires_template": "error",
         "readability_threshold": 0.50,
+        "requires_spell_check": "warning",
     },
     "other": {
         "requires_watermark": "error",
         "readability_threshold": 0.50,
+        "requires_spell_check": "warning",
     },
 }
 
@@ -187,8 +214,7 @@ def check_watermark(image, precomputed_words=None, precomputed_boxes=None) -> di
         level ="error",
     )
     result["missing"] = missing
-    result["boxes"] = boxes_abs
-    return result
+    return result, boxes_abs
 
 def _mask_regions(image: np.ndarray, logo_boxes: list) -> np.ndarray:
     """
@@ -276,7 +302,7 @@ def check_sgd(ocr_words: list) ->dict:
         label_ok="SGD present",
         label_fail="SGD MISSING",
         remark_fail="Use SGD for resolutions/advisories",
-        # level ="error",
+        level ="error",
     )
 
 
@@ -343,6 +369,7 @@ def check_logo_order(detected:dict, collaborators:list=None) -> dict:
             label_ok="",
             label_fail="Cannot check logo order",
             remark_fail="Missing NYC or BP logo prevents order validation",
+            level="error"
         )
 
     def _center_x(entry):
@@ -465,21 +492,86 @@ def _get_logo_boxes_abs(detected: dict, img_shape: tuple) -> list:
         boxes.append((int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])))
     return boxes
 
-# work in progress ---
-# def check_template(image, post_type) -> dict:
-#     pass
 
-# def check_spelling(text) -> dict:
-#     spell = SpellChecker()
-#     SPELL_IGNORE = {
-#         "nyc", "bp", "sk", "yorp", "sgd", "ngo",
+def check_spelling(text: str, spell: SpellChecker) -> list[dict]:
+    """
+    Check text and return a list of misspelled words with their positions.
 
-#         "pilipinas", "kabataan", "sanggunian", "baranggay", "kumusta",
-#         "ang", "mga",  "ng",
+    """
 
-#         "webinar", "maligayang", "pagbati", "araw"
-#     }
-#     pass
+    words = spell.split_words(text)
+    misspelled = spell.unknown(words)
+    errors = []
+    search_start = 0
+
+    for word in words:
+        if word.lower() in misspelled:
+            # Find the word's position in the original text
+            idx = text.lower().find(word.lower(), search_start)
+            if idx != -1:
+                errors.append({
+                    "word": word,
+                    "start": idx,
+                    "end": idx + len(word),
+                    "suggestions": spell.candidates(word)
+                })
+                search_start = idx + len(word)
+
+    return errors
+
+# spell= load_spell_checker(SPELL_WORD_LISTS)
+
+def check_spelling_on_image(
+    image: np.ndarray,
+    ocr_words: list,
+    ocr_boxes: list,
+    spell: SpellChecker | None = None,
+) -> tuple[np.ndarray, dict]:
+    """
+    Underlines misspelled word.
+    """
+    if spell is None:
+        spell = load_spell_checker(SPELL_WORD_LISTS)
+ 
+    h_img, w_img = image.shape[:2]
+    annotated = image.copy()
+ 
+    misspelled_set = spell.unknown(
+        [re.sub(r"[^a-zA-Z]", "", w) for w in ocr_words]
+    )
+    misspelled_set = {w.lower() for w in misspelled_set if w}
+ 
+    found_errors = []
+    for word, (x0_r, y0_r, x1_r, y1_r) in zip(ocr_words, ocr_boxes):
+        clean_word = re.sub(r"[^a-zA-Z]", "", word).lower()
+        if clean_word not in misspelled_set:
+            continue
+ 
+        # Convert relative → absolute pixel coordinates
+        x0 = int(x0_r * w_img)
+        x1 = int(x1_r * w_img)
+        y1 = int(y1_r * h_img)
+ 
+        # Draw a 2-px red underline just below the word's bottom edge
+        underline_y = min(y1 + 2, h_img - 1)
+        cv2.line(annotated, (x0, underline_y), (x1, underline_y), (0, 0, 255), 2)
+ 
+        found_errors.append({
+            "word": word,
+            "suggestions": list(spell.candidates(clean_word) or []),
+            "box_abs": (x0, int(y0_r * h_img), x1, y1),
+        })
+ 
+    passed = len(found_errors) == 0
+    result = _make_result(
+        passed=passed,
+        label_ok="No spelling errors",
+        label_fail=f"{len(found_errors)} spelling error(s) found",
+        remark_fail=", ".join(e["word"] for e in found_errors),
+        details={"errors": found_errors},
+        level="warning",
+    )
+    return annotated, result
 
 # ── Master report generator ───────────────────────────────────────────────────
 def generate_report(image, logo_model, post_type: str, collaborators:list=None) -> tuple:
@@ -518,11 +610,13 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
     logo_boxes_abs = _get_logo_boxes_abs(detected, img.shape)
     masked_image   = _mask_regions(img_annotated, logo_boxes_abs)
 
-    # OCR on masked image — logos and watermark strip are blank 
+    # OCR on masked image: logos and watermark strip are blank 
     ocr_words, ocr_confidences, ocr_boxes = _extract_ocr_data(_run_doctr(masked_image))
     # filter out bottom strip (watermark) for readability and spell check
     content_confidences = [c for c, b in zip(ocr_confidences, ocr_boxes) if b[1] < 0.85]
     content_words       = [w for w, b in zip(ocr_words, ocr_boxes) if b[1] < 0.85]
+    content_boxes       = [b for b in ocr_boxes if b[1] < 0.85]
+
 
     # Logo Order Check
     logo_order = check_logo_order(detected, collaborators=collaborators or [])
@@ -538,18 +632,18 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
 
     if rules.get("requires_watermark"):
         bottom_pairs = [(w, b) for w, b in zip(ocr_words, ocr_boxes) if b[1] >= 0.85]
-        audit["watermark"] = check_watermark(
+        watermark_result, watermark_boxes_abs = check_watermark(
             image,
             precomputed_words=[p[0] for p in bottom_pairs],
             precomputed_boxes=[p[1] for p in bottom_pairs],
         )
-
-        for (x0, y0, x1, y1) in audit["watermark"]["boxes"]:
+        audit["watermark"] = watermark_result
+        for (x0, y0, x1, y1) in watermark_boxes_abs:
             cv2.rectangle(img_annotated, (x0, y0), (x1, y1), (255, 200, 0), 1)
-        label_text = "Watermark OK" if audit["watermark"]["pass"] \
-            else f"Watermark MISSING: {', '.join(audit['watermark']['missing'])}"
+        label_text = "Watermark OK" if watermark_result["pass"] \
+            else f"Watermark MISSING: {', '.join(watermark_result['missing'])}"
         
-        color = (0, 255, 0) if audit["watermark"]["pass"] else (255, 0, 0)
+        color = (0, 255, 0) if watermark_result["pass"] else (255, 0, 0)
         cv2.putText(img_annotated, label_text, (10, h_img - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 2)
 
         
@@ -559,6 +653,12 @@ def generate_report(image, logo_model, post_type: str, collaborators:list=None) 
         readability = check_readability(content_confidences, threshold=threshold)
         audit["readability"] = readability
     
+    # Spelling check
+    if rules.get("requires_spell_check"):
+        img_annotated, spell_result = check_spelling_on_image(
+        img_annotated, content_words, content_boxes)
+        audit["spelling"] = spell_result
+
     # SGD check
     if rules.get("requires_sgd"):
         audit["sgd"] = check_sgd(ocr_words)
